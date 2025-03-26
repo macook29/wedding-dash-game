@@ -1,188 +1,197 @@
-"use client"
-
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef } from "react";
 
 export default function WeddingDash() {
-  const [isJumping, setIsJumping] = useState(false)
-  const [playerBottom, setPlayerBottom] = useState(0)
-  const [obstacles, setObstacles] = useState([])
-  const [powerUps, setPowerUps] = useState([])
-  const [score, setScore] = useState(0)
-  const [gameOver, setGameOver] = useState(false)
-  const [gameStarted, setGameStarted] = useState(false)
-  const [playerEmoji, setPlayerEmoji] = useState("👰")
-  const [nearMiss, setNearMiss] = useState(false)
-  const [speedMultiplier, setSpeedMultiplier] = useState(1)
-  const [canJump, setCanJump] = useState(true)
-  const gravity = 2
-  const jumpPower = 16
-  const jumpCooldown = useRef(false)
-  const gameRef = useRef(null)
-  const spawnerTimeout = useRef(null)
-  const powerUpTimeout = useRef(null)
+  const [isJumping, setIsJumping] = useState(false);
+  const [playerBottom, setPlayerBottom] = useState(0);
+  const [obstacles, setObstacles] = useState([]);
+  const [powerUps, setPowerUps] = useState([]);
+  const [score, setScore] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [playerEmoji, setPlayerEmoji] = useState("👰");
+  const [nearMiss, setNearMiss] = useState(false);
+  const [speedMultiplier, setSpeedMultiplier] = useState(1);
+  const [canJump, setCanJump] = useState(true);
+  const gravity = 2;
+  const jumpPower = 16;
+  const jumpCooldown = useRef(false);
+  const gameRef = useRef(null);
+  const spawnerTimeout = useRef(null);
+  const powerUpTimeout = useRef(null);
+
+  const GAME_HEIGHT = 300; // can be updated for responsiveness if needed
 
   const resetGame = () => {
-    setObstacles([])
-    setPowerUps([])
-    setScore(0)
-    setPlayerBottom(0)
-    setGameOver(false)
-    setGameStarted(false)
-    setNearMiss(false)
-    setSpeedMultiplier(1)
-    setCanJump(true)
-    clearTimeout(spawnerTimeout.current)
-    clearTimeout(powerUpTimeout.current)
-  }
+    setObstacles([]);
+    setPowerUps([]);
+    setScore(0);
+    setPlayerBottom(0);
+    setGameOver(false);
+    setGameStarted(false);
+    setNearMiss(false);
+    setSpeedMultiplier(1);
+    setCanJump(true);
+    clearTimeout(spawnerTimeout.current);
+    clearTimeout(powerUpTimeout.current);
+  };
 
   useEffect(() => {
-    if (!gameStarted || gameOver) return
+    if (!gameStarted || gameOver) return;
 
     const gameLoop = setInterval(() => {
       setObstacles((prev) =>
-        prev.map((obs) => ({ ...obs, left: obs.left - 20 * speedMultiplier })).filter((obs) => obs.left > -50),
-      )
+        prev.map((obs) => ({ ...obs, left: obs.left - 20 * speedMultiplier })).filter((obs) => obs.left > -50)
+      );
       setPowerUps((prev) =>
-        prev.map((p) => ({ ...p, left: p.left - 20 * speedMultiplier })).filter((p) => p.left > -50),
-      )
-      setScore((prev) => prev + 1)
-      setSpeedMultiplier((prev) => Math.min(prev + 0.002 + Math.floor(score / 500) * 0.02, 5))
-    }, 100)
+        prev.map((p) => ({ ...p, left: p.left - 20 * speedMultiplier })).filter((p) => p.left > -50)
+      );
+      setScore((prev) => prev + 1);
+      setSpeedMultiplier((prev) => Math.min(prev + 0.002 + Math.floor(score / 500) * 0.02, 5));
+    }, 100);
 
     const scheduleObstacle = () => {
-      const delay = 1500 + Math.random() * 2000
+      const delay = 1500 + Math.random() * 2000;
       spawnerTimeout.current = setTimeout(() => {
-        setObstacles((prev) => [...prev, { left: window.innerWidth }])
-        scheduleObstacle()
-      }, delay)
-    }
+        setObstacles((prev) => [...prev, { left: window.innerWidth }]);
+        scheduleObstacle();
+      }, delay);
+    };
 
     const schedulePowerUp = () => {
-      const delay = 5000 + Math.random() * 5000
+      const delay = 5000 + Math.random() * 5000;
       powerUpTimeout.current = setTimeout(() => {
-        setPowerUps((prev) => [...prev, { left: window.innerWidth }])
-        schedulePowerUp()
-      }, delay)
-    }
+        setPowerUps((prev) => [...prev, { left: window.innerWidth }]);
+        schedulePowerUp();
+      }, delay);
+    };
 
-    scheduleObstacle()
-    schedulePowerUp()
+    scheduleObstacle();
+    schedulePowerUp();
 
     return () => {
-      clearInterval(gameLoop)
-      clearTimeout(spawnerTimeout.current)
-      clearTimeout(powerUpTimeout.current)
-    }
-  }, [gameStarted, gameOver])
+      clearInterval(gameLoop);
+      clearTimeout(spawnerTimeout.current);
+      clearTimeout(powerUpTimeout.current);
+    };
+  }, [gameStarted, gameOver]);
 
   useEffect(() => {
     const gravityEffect = setInterval(() => {
       setPlayerBottom((bottom) => {
-        const newBottom = Math.max(bottom - gravity, 0)
-        if (bottom > 0 && newBottom === 0) setCanJump(true)
-        return newBottom
-      })
-    }, 20)
-    return () => clearInterval(gravityEffect)
-  }, [])
+        const newBottom = Math.max(bottom - gravity, 0);
+        if (bottom > 0 && newBottom === 0) setCanJump(true);
+        return newBottom;
+      });
+    }, 20);
+    return () => clearInterval(gravityEffect);
+  }, []);
 
   useEffect(() => {
-    const playerLeft = 40
-    const playerTop = 300 - playerBottom - 40
-    const playerRight = playerLeft + 40
-    const playerBottomEdge = playerTop + 40
+    const playerLeft = 40;
+    const playerTop = GAME_HEIGHT - playerBottom - 40;
+    const playerRight = playerLeft + 40;
+    const playerBottomEdge = playerTop + 40;
 
-    let nearMissDetected = false
+    let nearMissDetected = false;
 
     obstacles.forEach((obs) => {
-      const obstacleLeft = obs.left
-      const obstacleTop = 300 - 32
-      const obstacleRight = obstacleLeft + 32
-      const obstacleBottom = obstacleTop + 32
+      const obstacleLeft = obs.left;
+      const obstacleTop = GAME_HEIGHT - 32;
+      const obstacleRight = obstacleLeft + 32;
+      const obstacleBottom = obstacleTop + 32;
 
-      const horizontalOverlap = playerLeft < obstacleRight && playerRight > obstacleLeft
-      const verticalOverlap = playerTop < obstacleBottom && playerBottomEdge > obstacleTop
+      const horizontalOverlap = playerLeft < obstacleRight && playerRight > obstacleLeft;
+      const verticalOverlap = playerTop < obstacleBottom && playerBottomEdge > obstacleTop;
 
       if (horizontalOverlap && verticalOverlap) {
-        setGameOver(true)
+        setGameOver(true);
       } else {
-        const horizontalDistance = Math.max(0, Math.max(obstacleLeft - playerRight, playerLeft - obstacleRight))
-        const verticalDistance = Math.max(0, Math.max(obstacleTop - playerBottomEdge, playerTop - obstacleBottom))
-        const distance = Math.sqrt(horizontalDistance ** 2 + verticalDistance ** 2)
+        const horizontalDistance = Math.max(0, Math.max(obstacleLeft - playerRight, playerLeft - obstacleRight));
+        const verticalDistance = Math.max(0, Math.max(obstacleTop - playerBottomEdge, playerTop - obstacleBottom));
+        const distance = Math.sqrt(horizontalDistance ** 2 + verticalDistance ** 2);
 
         if (distance <= 10) {
-          nearMissDetected = true
+          nearMissDetected = true;
         }
       }
-    })
+    });
 
     powerUps.forEach((p, index) => {
-      const pLeft = p.left
-      const pTop = 300 - 32
-      const pRight = pLeft + 32
-      const pBottom = pTop + 32
+      const pLeft = p.left;
+      const pTop = GAME_HEIGHT - 32;
+      const pRight = pLeft + 32;
+      const pBottom = pTop + 32;
 
-      const overlap = playerLeft < pRight && playerRight > pLeft && playerTop < pBottom && playerBottomEdge > pTop
+      const overlap = playerLeft < pRight && playerRight > pLeft && playerTop < pBottom && playerBottomEdge > pTop;
 
       if (overlap) {
-        setPowerUps((prev) => prev.filter((_, i) => i !== index))
-        setScore((s) => s + 50)
+        setPowerUps((prev) => prev.filter((_, i) => i !== index));
+        setScore((s) => s + 50);
       }
-    })
+    });
 
-    setNearMiss(nearMissDetected)
-  }, [obstacles, powerUps, playerBottom])
+    setNearMiss(nearMissDetected);
+  }, [obstacles, powerUps, playerBottom]);
+
+  const triggerJump = () => {
+    if (gameOver || isJumping || jumpCooldown.current || !canJump) return;
+    setIsJumping(true);
+    setCanJump(false);
+    jumpCooldown.current = true;
+    let velocity = jumpPower;
+
+    const jumpInterval = setInterval(() => {
+      setPlayerBottom((bottom) => {
+        const newBottom = bottom + velocity;
+        velocity -= 1;
+        if (velocity <= 0) {
+          clearInterval(jumpInterval);
+          setIsJumping(false);
+          setTimeout(() => (jumpCooldown.current = false), 200);
+        }
+        return newBottom;
+      });
+    }, 20);
+  };
 
   const handleKeyPress = (e) => {
     if (!gameStarted && e.code === "Space") {
-      setGameStarted(true)
-      return
+      setGameStarted(true);
+      return;
     }
+    if (e.code === "Space") triggerJump();
+  };
 
-    if (gameOver) return
-
-    if (e.code === "Space" && !isJumping && !jumpCooldown.current && canJump) {
-      setIsJumping(true)
-      setCanJump(false)
-      jumpCooldown.current = true
-      let velocity = jumpPower
-
-      const jumpInterval = setInterval(() => {
-        setPlayerBottom((bottom) => {
-          const newBottom = bottom + velocity
-          velocity -= 1
-          if (velocity <= 0) {
-            clearInterval(jumpInterval)
-            setIsJumping(false)
-            setTimeout(() => (jumpCooldown.current = false), 200)
-          }
-          return newBottom
-        })
-      }, 20)
+  const handleTouchStart = () => {
+    if (!gameStarted) {
+      setGameStarted(true);
+    } else {
+      triggerJump();
     }
-  }
+  };
 
   useEffect(() => {
-    window.addEventListener("keydown", handleKeyPress)
-    return () => window.removeEventListener("keydown", handleKeyPress)
-  }, [gameStarted, gameOver, canJump])
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [gameStarted, gameOver, canJump]);
 
   return (
-    <div className="w-full h-[300px] bg-pink-100 relative overflow-hidden rounded-2xl shadow-xl" ref={gameRef}>
+    <div
+      className="w-full max-w-[600px] h-[300px] bg-pink-100 relative overflow-hidden rounded-2xl shadow-xl mx-auto touch-none"
+      ref={gameRef}
+      onTouchStart={handleTouchStart}
+    >
       {!gameStarted && !gameOver && (
-        <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center text-pink-600 text-xl p-4 text-center">
-          <p className="font-bold text-2xl mb-4">🎮 Welcome to Wedding Dash!</p>
+        <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center text-pink-600 text-base p-4 text-center sm:text-lg">
+          <p className="font-bold text-xl sm:text-2xl mb-4">🎮 Welcome to Wedding Dash!</p>
           <p>Help the bride or groom jump over the flying bouquets.</p>
-          <p className="mb-2">Collect 🎁 presents for bonus points! Each one gives you +50 points.</p>
+          <p className="mb-2">Collect 🎁 presents for bonus points! +50 each!</p>
           <p className="mb-2">Choose your character:</p>
           <div className="flex gap-4 text-3xl mb-4">
             <button onClick={() => setPlayerEmoji("👰")}>👰</button>
             <button onClick={() => setPlayerEmoji("🤵")}>🤵</button>
           </div>
-          <p>
-            Press <span className="font-bold">Space</span> to jump and start!
-          </p>
-          <p className="mt-4 animate-bounce">Press Space to Start</p>
+          <p>Tap anywhere or press <span className="font-bold">Space</span> to jump and start!</p>
         </div>
       )}
 
@@ -214,13 +223,13 @@ export default function WeddingDash() {
       ))}
 
       {nearMiss && !gameOver && (
-        <div className="absolute top-10 right-10 px-3 py-1 bg-yellow-300 text-yellow-900 font-bold rounded shadow">
+        <div className="absolute top-10 right-10 px-3 py-1 bg-yellow-300 text-yellow-900 font-bold rounded shadow text-sm sm:text-base">
           Near Miss!
         </div>
       )}
 
       {gameOver && (
-        <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center text-pink-600 text-xl">
+        <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center text-pink-600 text-xl px-4 text-center">
           <p>💥 Oops! You hit an obstacle!</p>
           <p className="mt-2 font-bold">Final Score: {score}</p>
           <button
@@ -232,8 +241,10 @@ export default function WeddingDash() {
         </div>
       )}
 
-      {!gameOver && gameStarted && <div className="absolute top-2 left-2 text-pink-600 font-bold">Score: {score}</div>}
+      {!gameOver && gameStarted && (
+        <div className="absolute top-2 left-2 text-pink-600 font-bold text-sm sm:text-base">Score: {score}</div>
+      )}
     </div>
-  )
+  );
 }
 
